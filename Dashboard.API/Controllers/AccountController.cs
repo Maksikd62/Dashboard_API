@@ -2,12 +2,14 @@
 using Dashboard.BLL.Validators;
 using Dashboard.DAL.ViewModels;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.WebUtilities;
+using System.Text;
 
 namespace Dashboard.API.Controllers
 {
     [ApiController]
     [Route("[controller]")]
-    public class AccountController : Controller
+    public class AccountController : BaseController
     {
         private readonly IAccountService _accountService;
 
@@ -22,23 +24,53 @@ namespace Dashboard.API.Controllers
             var validator = new SignUpValidator();
             var validateResult = await validator.ValidateAsync(model);
 
-            if(validateResult.IsValid)
+            if (validateResult.IsValid)
             {
                 var response = await _accountService.SignUpAsync(model);
 
-                if(response.Success)
+                if (response.Success)
                 {
                     return Ok(response);
                 }
                 else
                 {
-                    return BadRequest(response); 
+                    return BadRequest(response);
                 }
             }
             else
             {
                 return BadRequest(validateResult.Errors);
             }
+        }
+
+        [HttpPost("SignIn")]
+        public async Task<IActionResult> SignInAsync(SignInVM model)
+        {
+            var validator = new SignInValidator();
+            var validationResult = await validator.ValidateAsync(model);
+
+            if (!validationResult.IsValid)
+            {
+                return BadRequest(validationResult.Errors);
+            }
+
+            var response = await _accountService.SignInAsync(model);
+
+            return await GetResultAsync(response);
+        }
+
+
+        [HttpGet("EmailConfirmation")]
+        public async Task<IActionResult> EmailConfirmationAsync(string? u, string? t)
+        {
+            if (string.IsNullOrEmpty(u) || string.IsNullOrEmpty(t))
+            {
+                return NotFound();
+            }
+
+            var result = await _accountService.ConfirmEmail(u, t);
+
+            return Ok("Пошта підтверджена");
         }
     }
 }

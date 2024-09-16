@@ -1,13 +1,18 @@
-﻿using Dashboard.BLL.Services.UserService;
+﻿using Azure;
+using Dashboard.BLL.Services.UserService;
+using Dashboard.DAL.Models.Identity;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Dashboard.BLL.Validators;
+using Dashboard.DAL.Models.Identity;
+using Dashboard.DAL.ViewModels;
 
 namespace Dashboard.API.Controllers
 {
 
     [ApiController]
     [Route("[controller]")]
-    public class UserController : ControllerBase
+    public class UserController : BaseController
     {
         private readonly IUserService _userService;
 
@@ -21,14 +26,23 @@ namespace Dashboard.API.Controllers
         {
             var response = await _userService.GetAllUsersAsync();
 
-            if (response.Success)
+            return await GetResultAsync(response);
+        }
+
+        [HttpPut]
+        public async Task<IActionResult> UpdateAsync(UserVM model)
+        {
+            var validator = new UserValidator();
+            var validationResult = await validator.ValidateAsync(model);
+
+            if (!validationResult.IsValid)
             {
-                return Ok(response);
+                return BadRequest(validationResult.Errors);
             }
-            else
-            {
-                return BadRequest(response);
-            }
+
+            var response = await _userService.UpdateAsync(model);
+
+            return await GetResultAsync(response);
         }
 
         [HttpGet("GetById")]
@@ -54,6 +68,20 @@ namespace Dashboard.API.Controllers
             if (response.Success)
             {
                 return Ok();
+            }
+            else
+            {
+                return BadRequest();
+            }
+        }
+
+        [HttpGet("GetRoles")]
+        public async Task<IActionResult> GetRolesAsync()
+        {
+            var response = await _userService.GetRolesAsync();
+            if (response.Success)
+            {
+                return Ok(response);
             }
             else
             {
